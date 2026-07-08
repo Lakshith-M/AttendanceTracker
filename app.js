@@ -608,7 +608,6 @@ function renderDashboard() {
   }
 
   // Load Today's Timetable
-  const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
   let activeDay = todayDay;
   if (todayDay === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
     activeDay = state.settings.saturdaySchedule;
