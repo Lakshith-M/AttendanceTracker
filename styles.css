@@ -1443,6 +1443,11 @@ body {
   to { transform: translateX(0); opacity: 1; }
 }
 
+@keyframes fadeOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(120%); opacity: 0; }
+}
+
 .toast.success {
   border-left: 4px solid var(--color-success);
 }

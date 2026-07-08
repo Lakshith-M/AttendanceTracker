@@ -2059,10 +2059,10 @@ function showToast(message, type = 'success') {
   // Animation removal
   setTimeout(() => {
     toast.style.animation = 'fadeOut var(--transition-fast) forwards';
-    toast.addEventListener('animationend', () => {
+    setTimeout(() => {
       toast.remove();
-    });
-  }, 3500);
+    }, 250);
+  }, 2200);
 }
 
 // Render visual schedule list for mobile view
