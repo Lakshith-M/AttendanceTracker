@@ -21,3 +21,11 @@ yarn-error.log*
 # Agent local artifacts and temp dirs
 .gemini/
 .agents/
+
+# Timetable images & screenshots
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif
+
