@@ -598,6 +598,10 @@ function renderDashboard() {
     dateText += ` (Running ${targetDayName}'s Timetable)`;
   }
   document.getElementById('dashboard-date').textContent = dateText;
+  const mobileDateEl = document.getElementById('mobile-dashboard-date-display');
+  if (mobileDateEl) {
+    mobileDateEl.textContent = dateText;
+  }
 
   // Toggle Undo Button
   const undoBtn = document.getElementById('btn-undo-last');

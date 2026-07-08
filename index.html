@@ -12,9 +12,20 @@
   <div id="app-container">
     <!-- Sidebar Navigation (Desktop) -->
     <aside id="sidebar">
-      <div class="brand">
-        <div class="brand-icon">75</div>
-        <div class="brand-name">Track75</div>
+      <div class="brand" style="padding: 20px 24px; gap: 12px; display: flex; align-items: center;">
+        <div class="app-logo-box" style="width: 50px; height: 50px; border-radius: 12px; padding: 4px; box-shadow: none; background: #0b131f;">
+          <div class="logo-circle-container" style="width: 30px; height: 30px;">
+            <svg viewBox="0 0 36 36" class="logo-circular-chart">
+              <path class="logo-circle-bg" stroke-width="4" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="logo-circle" stroke-width="4" stroke-dasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <div class="logo-inner-text" style="font-size: 0.65rem;">75%</div>
+          </div>
+          <div class="logo-text-sub" style="font-size: 0.4rem; letter-spacing: 0.5px; margin-top: 1px;">
+            <span class="white-text">TRACK</span><span class="green-text">75</span>
+          </div>
+        </div>
+        <span class="brand-name" style="font-weight: 700; font-size: 1.25rem; letter-spacing: -0.5px; color: var(--text-primary);">Track75</span>
       </div>
       <nav>
         <ul class="nav-list">
@@ -69,19 +80,31 @@
 
     <!-- Main Content Area -->
     <main id="main-content">
-      <!-- Mobile Top Bar Header -->
-      <header id="mobile-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div style="width: 32px; height: 32px; border-radius: var(--radius-xs); background: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.9rem;">75</div>
-          <span style="font-weight: 700; font-size: 1.15rem; letter-spacing: -0.5px; color: var(--text-primary);">Track75</span>
-        </div>
-      </header>
-
       <!-- General Top Alerts Area -->
       <div id="general-alerts-area"></div>
 
       <!-- VIEW: DASHBOARD -->
       <section id="view-dashboard" class="view-section active">
+        <!-- Mobile Top Brand Hero (Dashboard View only) -->
+        <div class="mobile-home-header">
+          <div class="app-logo-box">
+            <div class="logo-circle-container">
+              <svg viewBox="0 0 36 36" class="logo-circular-chart">
+                <path class="logo-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="logo-circle" stroke-dasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <div class="logo-inner-text">75%</div>
+            </div>
+            <div class="logo-text-sub">
+              <span class="white-text">TRACK</span><span class="green-text">75</span>
+            </div>
+          </div>
+          <div class="mobile-header-meta">
+            <span class="app-tagline">Track75 Dashboard</span>
+            <h2 id="mobile-dashboard-date-display">Wednesday, 8 July</h2>
+          </div>
+        </div>
+
         <div class="header-row">
           <div class="header-title-area">
             <h1 id="dashboard-date">Wednesday, 8 July</h1>
