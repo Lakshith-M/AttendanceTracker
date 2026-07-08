@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Attendance Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Sidebar Navigation (Desktop) -->
+    <aside id="sidebar">
+      <div class="brand">
+        <div class="brand-icon">A</div>
+        <div class="brand-name">Track Attendance</div>
+      </div>
+      <nav>
+        <ul class="nav-list">
+          <li class="nav-item active" data-view="dashboard">
+            <button><i data-lucide="layout-dashboard"></i> Dashboard</button>
+          </li>
+          <li class="nav-item" data-view="timetable">
+            <button><i data-lucide="table"></i> Timetable</button>
+          </li>
+          <li class="nav-item" data-view="attendance">
+            <button><i data-lucide="history"></i> Attendance</button>
+          </li>
+          <li class="nav-item" data-view="subjects">
+            <button><i data-lucide="book-open"></i> Subjects</button>
+          </li>
+          <li class="nav-item" data-view="statistics">
+            <button><i data-lucide="bar-chart-3"></i> Statistics</button>
+          </li>
+          <li class="nav-item" data-view="settings">
+            <button><i data-lucide="settings"></i> Settings</button>
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <p>Min Target Attendance: <span id="sidebar-target-display">75%</span></p>
+      </div>
+    </aside>
+
+    <!-- Mobile Navigation Bar -->
+    <nav id="mobile-nav">
+      <ul class="mobile-nav-list">
+        <li class="mobile-nav-item active" data-view="dashboard">
+          <button><i data-lucide="layout-dashboard"></i><span>Home</span></button>
+        </li>
+        <li class="mobile-nav-item" data-view="timetable">
+          <button><i data-lucide="table"></i><span>Schedule</span></button>
+        </li>
+        <li class="mobile-nav-item" data-view="attendance">
+          <button><i data-lucide="history"></i><span>Logs</span></button>
+        </li>
+        <li class="mobile-nav-item" data-view="subjects">
+          <button><i data-lucide="book-open"></i><span>Courses</span></button>
+        </li>
+        <li class="mobile-nav-item" data-view="statistics">
+          <button><i data-lucide="bar-chart-3"></i><span>Stats</span></button>
+        </li>
+        <li class="mobile-nav-item" data-view="settings">
+          <button><i data-lucide="settings"></i><span>Config</span></button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="main-content">
+      <!-- General Top Alerts Area -->
+      <div id="general-alerts-area"></div>
+
+      <!-- VIEW: DASHBOARD -->
+      <section id="view-dashboard" class="view-section active">
+        <div class="header-row">
+          <div class="header-title-area">
+            <h1 id="dashboard-date">Wednesday, 8 July</h1>
+            <p>Your Today's Overview</p>
+          </div>
+          <div class="dashboard-top-actions">
+            <button id="btn-undo-last" class="btn-secondary" style="display: none;"><i data-lucide="rotate-ccw"></i> Undo Last Status</button>
+          </div>
+        </div>
+
+        <!-- Segmented Tab Controller for Mobile -->
+        <div class="mobile-dashboard-tabs" id="mobile-dashboard-tabs">
+          <button class="mobile-dash-tab active" data-dash-tab="today"><i data-lucide="calendar"></i> Today</button>
+          <button class="mobile-dash-tab" data-dash-tab="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
+          <button class="mobile-dash-tab" data-dash-tab="simulator"><i data-lucide="sliders"></i> Simulator</button>
+        </div>
+
+        <div class="dashboard-grid" data-active-dash-tab="today">
+          <!-- Main Area: Timetable Classes & Quick Stats -->
+          <div class="dashboard-main">
+            <!-- Today's Timetable Classes -->
+            <div class="card dash-sec-today">
+              <h2 style="margin-bottom: 16px;">Today's Classes</h2>
+              <div id="today-classes-container" class="period-list">
+                <!-- Classes will be loaded here dynamically -->
+              </div>
+            </div>
+
+            <!-- Quick Statistics Panel -->
+            <div class="card dash-sec-stats">
+              <h2 style="margin-bottom: 16px;">Quick Statistics</h2>
+              <div class="stats-grid">
+                <div class="card stat-card">
+                  <div class="stat-card-val" id="stat-overall-pct">0%</div>
+                  <div class="stat-card-lbl">Overall Attendance</div>
+                </div>
+                <div class="card stat-card">
+                  <div class="stat-card-val" id="stat-attended">0</div>
+                  <div class="stat-card-lbl">Classes Attended</div>
+                </div>
+                <div class="card stat-card">
+                  <div class="stat-card-val" id="stat-missed">0</div>
+                  <div class="stat-card-lbl">Classes Missed</div>
+                </div>
+                <div class="card stat-card">
+                  <div class="stat-card-val" id="stat-od">0</div>
+                  <div class="stat-card-lbl">OD Count</div>
+                </div>
+                <div class="card stat-card">
+                  <div class="stat-card-val" id="stat-cancelled">0</div>
+                  <div class="stat-card-lbl">Cancelled Classes</div>
+                </div>
+                <div class="card stat-card">
+                  <div class="stat-card-val" id="stat-conducted">0</div>
+                  <div class="stat-card-lbl">Total Conducted</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar Area: Subject Progress & What-If -->
+          <div class="dashboard-side">
+            <!-- Attendance Summary -->
+            <div class="card dash-sec-summary">
+              <h2 style="margin-bottom: 16px;">Attendance Summary</h2>
+              <div id="dashboard-summary-list" class="progress-list">
+                <!-- Subjects list will be populated here -->
+              </div>
+            </div>
+
+            <!-- "What-If" Calculator -->
+            <div class="card dash-sec-simulator">
+              <h2>"What If?" Calculator</h2>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+                Calculate future impact without affecting actual records.
+              </p>
+              <div class="calculator-inputs">
+                <div class="input-group">
+                  <label for="calc-subject">Select Course</label>
+                  <select id="calc-subject" class="calculator-select">
+                    <!-- Loaded dynamically -->
+                  </select>
+                </div>
+                <div class="calculator-sliders">
+                  <div class="slider-item">
+                    <div class="slider-header">
+                      <span>Bunk classes tomorrow</span>
+                      <span id="slider-bunk-val">0</span>
+                    </div>
+                    <input type="range" id="slider-bunk" min="0" max="10" value="0" style="width:100%;">
+                  </div>
+                  <div class="slider-item">
+                    <div class="slider-header">
+                      <span>Attend next consecutive classes</span>
+                      <span id="slider-attend-val">0</span>
+                    </div>
+                    <input type="range" id="slider-attend" min="0" max="30" value="0" style="width:100%;">
+                  </div>
+                </div>
+                <div class="calculator-result">
+                  <div class="calc-res-label">New Attendance:</div>
+                  <div class="calc-res-value" id="calc-result-pct">0.00%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: TIMETABLE -->
+      <section id="view-timetable" class="view-section">
+        <div class="header-row">
+          <div class="header-title-area">
+            <h1>Weekly Schedule</h1>
+            <p>View and customize your timetable</p>
+          </div>
+          <div class="timetable-actions" style="display: flex; gap: 8px;">
+            <button id="btn-copy-week" class="btn-secondary"><i data-lucide="copy"></i> Copy Week</button>
+            <button id="btn-toggle-editor" class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+              <i data-lucide="edit-2"></i> Edit Timetable
+            </button>
+          </div>
+        </div>
+
+        <!-- Full Visual Timetable (Real Grid Table) -->
+        <div class="card timetable-card">
+          <h2 style="margin-bottom: 16px;">Weekly Schedule Grid</h2>
+          <div class="timetable-wrapper">
+            <table class="timetable-grid-table" id="timetable-display-grid">
+              <thead id="timetable-grid-header">
+                <!-- Dynamically generated headers -->
+              </thead>
+              <tbody id="timetable-grid-body">
+                <!-- Visual periods will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Visual Timetable List representation -->
+          <div class="mobile-timetable-container" id="mobile-timetable-container">
+            <div class="mobile-timetable-tabs" id="mobile-timetable-day-tabs" style="margin-bottom: 16px;">
+              <button class="tab-btn active" data-mobile-day="mon">Mon</button>
+              <button class="tab-btn" data-mobile-day="tue">Tue</button>
+              <button class="tab-btn" data-mobile-day="wed">Wed</button>
+              <button class="tab-btn" data-mobile-day="thu">Thu</button>
+              <button class="tab-btn" data-mobile-day="fri">Fri</button>
+              <button class="tab-btn" data-mobile-day="sat">Sat</button>
+            </div>
+            <div class="mobile-timetable-list" id="mobile-timetable-list-container">
+              <!-- Dynamically populated list for the selected day -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule Configuration Panel -->
+        <div class="card" id="timetable-editor-card" style="display: none; margin-top: 24px;">
+          <div class="header-row" style="margin-bottom: 16px;">
+            <h2>Configure Timetable Periods</h2>
+          </div>
+          
+          <div class="timetable-tabs" id="timetable-day-tabs">
+            <button class="tab-btn active" data-day="mon">Monday</button>
+            <button class="tab-btn" data-day="tue">Tuesday</button>
+            <button class="tab-btn" data-day="wed">Wednesday</button>
+            <button class="tab-btn" data-day="thu">Thursday</button>
+            <button class="tab-btn" data-day="fri">Friday</button>
+            <button class="tab-btn" data-day="sat">Saturday</button>
+          </div>
+
+          <div class="period-editor-list" id="period-editor-container">
+            <!-- Period rows will be loaded dynamically -->
+          </div>
+
+          <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <button id="btn-add-period" class="btn-primary"><i data-lucide="plus"></i> Add Period</button>
+            <button id="btn-copy-day" class="btn-secondary"><i data-lucide="copy"></i> Copy Day To...</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: ATTENDANCE -->
+      <section id="view-attendance" class="view-section">
+        <div class="header-row">
+          <div class="header-title-area">
+            <h1>Attendance Log</h1>
+            <p>Track history and edit daily records</p>
+          </div>
+        </div>
+
+        <div class="card calendar-container">
+          <div class="calendar-header">
+            <button id="calendar-prev-month" class="btn-icon"><i data-lucide="chevron-left"></i></button>
+            <div class="calendar-month-year" id="calendar-month-year-display">July 2026</div>
+            <button id="calendar-next-month" class="btn-icon"><i data-lucide="chevron-right"></i></button>
+          </div>
+          
+          <div class="calendar-grid">
+            <div class="calendar-weekday">Sun</div>
+            <div class="calendar-weekday">Mon</div>
+            <div class="calendar-weekday">Tue</div>
+            <div class="calendar-weekday">Wed</div>
+            <div class="calendar-weekday">Thu</div>
+            <div class="calendar-weekday">Fri</div>
+            <div class="calendar-weekday">Sat</div>
+          </div>
+          <div class="calendar-grid" id="calendar-days-grid">
+            <!-- Calendar days render dynamically -->
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 id="selected-date-title" style="margin-bottom: 16px;">Classes on 8 July 2026</h2>
+          <div id="selected-date-classes-list" class="period-list">
+            <!-- Dynamically populated selected date classes -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: SUBJECTS -->
+      <section id="view-subjects" class="view-section">
+        <div class="header-row">
+          <div class="header-title-area">
+            <h1>Course Management</h1>
+            <p>Create and edit subjects you track</p>
+          </div>
+          <div>
+            <button id="btn-open-add-subject" class="btn-primary"><i data-lucide="plus"></i> Add Course</button>
+          </div>
+        </div>
+
+        <!-- Filters and search -->
+        <div class="card" style="padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div class="search-container">
+            <input type="text" id="subject-search-input" class="form-input search-input" placeholder="Search course by name, code or faculty...">
+          </div>
+        </div>
+
+        <!-- Subject List Grid -->
+        <div class="subjects-grid" id="subjects-container">
+          <!-- Loaded dynamically -->
+        </div>
+      </section>
+
+      <!-- VIEW: STATISTICS -->
+      <section id="view-statistics" class="view-section">
+        <div class="header-row">
+          <div class="header-title-area">
+            <h1>Advanced Statistics</h1>
+            <p>Comprehensive overview of your academic record</p>
+          </div>
+        </div>
+
+        <!-- SVG Progress Meters Grid -->
+        <div class="stats-charts-row" id="stats-gauges-container">
+          <!-- Dynamic SVG gauges -->
+        </div>
+
+        <!-- Detailed Metrics Table -->
+        <div class="card">
+          <h2 style="margin-bottom: 16px;">Performance Matrix</h2>
+          <div class="stats-table-wrapper">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Course Title</th>
+                  <th>Conducted</th>
+                  <th>Attended</th>
+                  <th>Missed</th>
+                  <th>OD</th>
+                  <th>Cancelled</th>
+                  <th>Current %</th>
+                  <th>Target %</th>
+                  <th>Status Forecast</th>
+                </tr>
+              </thead>
+              <tbody id="stats-table-body">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: SETTINGS -->
+      <section id="view-settings" class="view-section">
+        <div class="header-row">
+          <div class="header-title-area">
+            <h1>Settings & Backup</h1>
+            <p>Configure app defaults and export files</p>
+          </div>
+        </div>
+
+        <div class="card settings-list">
+          <!-- Setting: Global Target -->
+          <div class="settings-item">
+            <div class="settings-info">
+              <h3>Global Target Attendance</h3>
+              <p>Default target attendance percentage for new courses.</p>
+            </div>
+            <div class="settings-control">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="number" id="input-global-target" class="form-input" min="50" max="100" value="75" style="width: 80px; text-align: center;">
+                <span style="font-weight: 600;">%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting: Theme -->
+          <div class="settings-item">
+            <div class="settings-info">
+              <h3>Interface Theme</h3>
+              <p>Select display appearance theme.</p>
+            </div>
+            <div class="settings-control">
+              <div class="theme-selector">
+                <button class="theme-btn" data-theme="light"><i data-lucide="sun"></i> Light</button>
+                <button class="theme-btn" data-theme="dark"><i data-lucide="moon"></i> Dark</button>
+                <button class="theme-btn" data-theme="system"><i data-lucide="monitor"></i> System</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting: Saturday Day Order -->
+          <div class="settings-item">
+            <div class="settings-info">
+              <h3>Saturday Day Order</h3>
+              <p>Assign another weekday's timetable to Saturday (e.g. running Monday classes on Saturday).</p>
+            </div>
+            <div class="settings-control">
+              <select id="select-saturday-schedule" class="form-select" style="width: 200px;">
+                <option value="off">Off (No Classes)</option>
+                <option value="mon">Monday Timetable</option>
+                <option value="tue">Tuesday Timetable</option>
+                <option value="wed">Wednesday Timetable</option>
+                <option value="thu">Thursday Timetable</option>
+                <option value="fri">Friday Timetable</option>
+                <option value="sat">Saturday Timetable</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Setting: Data Backup JSON -->
+          <div class="settings-item">
+            <div class="settings-info" style="flex: 1; min-width: 300px;">
+              <h3>Backup & Restore Configuration</h3>
+              <p>Copy-paste the text data below or save as a file to safeguard your logs.</p>
+              <textarea id="settings-backup-area" class="backup-text-area" readonly style="margin-top: 12px;"></textarea>
+            </div>
+            <div class="settings-control" style="display:flex; flex-direction:column; gap:8px;">
+              <button id="btn-backup-download" class="btn-secondary" style="width: 100%;"><i data-lucide="download"></i> Download Backup File</button>
+              <button id="btn-backup-upload-trigger" class="btn-secondary" style="width: 100%;"><i data-lucide="upload"></i> Upload Backup File</button>
+              <input type="file" id="input-backup-file" style="display: none;" accept=".json">
+              <button id="btn-backup-restore-text" class="btn-primary" style="width: 100%;"><i data-lucide="check-square"></i> Apply Text Configuration</button>
+            </div>
+          </div>
+
+          <!-- Setting: CSV operations -->
+          <div class="settings-item">
+            <div class="settings-info">
+              <h3>CSV Logs</h3>
+              <p>Export attendance records or import from standard tabular CSV file.</p>
+            </div>
+            <div class="settings-control" style="display: flex; gap: 8px;">
+              <button id="btn-csv-export" class="btn-secondary"><i data-lucide="file-spreadsheet"></i> Export CSV</button>
+              <button id="btn-csv-import-trigger" class="btn-secondary"><i data-lucide="upload-cloud"></i> Import CSV</button>
+              <input type="file" id="input-csv-file" style="display: none;" accept=".csv">
+            </div>
+          </div>
+
+          <!-- Setting: Reset data -->
+          <div class="settings-item">
+            <div class="settings-info">
+              <h3 style="color: var(--color-danger);">Reset Data Store</h3>
+              <p>Erase all subjects, schedules, and attendance logs. This action is irreversible.</p>
+            </div>
+            <div class="settings-control">
+              <button id="btn-factory-reset" class="btn-danger" style="width: 100%;"><i data-lucide="trash-2"></i> Reset All Data</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- TOAST CONTAINER FOR FLOATING ALERTS -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- MODAL: ADD / EDIT COURSE -->
+  <div class="modal-overlay" id="modal-subject">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-subject-title">Add Course</h2>
+        <button class="btn-icon" id="btn-close-modal-subject"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="form-subject-id">
+        
+        <div class="input-group">
+          <label for="form-subject-title">Course Title *</label>
+          <input type="text" id="form-subject-title" class="form-input" placeholder="e.g. Machine Learning" required>
+        </div>
+
+        <div class="input-group">
+          <label for="form-subject-short">Course Short Form *</label>
+          <input type="text" id="form-subject-short" class="form-input" placeholder="e.g. ML" required>
+        </div>
+
+        <div class="input-group">
+          <label for="form-subject-faculty-initial">Faculty Initial *</label>
+          <input type="text" id="form-subject-faculty-initial" class="form-input" placeholder="e.g. RK" required>
+        </div>
+
+        <div class="input-group">
+          <label for="form-subject-code">Course Code (Optional)</label>
+          <input type="text" id="form-subject-code" class="form-input" placeholder="e.g. CS-401">
+        </div>
+
+        <div class="input-group">
+          <label for="form-subject-faculty-name">Faculty Full Name (Optional)</label>
+          <input type="text" id="form-subject-faculty-name" class="form-input" placeholder="e.g. Dr. Ramesh Kumar">
+        </div>
+
+        <div class="input-group">
+          <label for="form-subject-credits">Course Credits (Optional)</label>
+          <input type="number" id="form-subject-credits" class="form-input" placeholder="e.g. 4" min="1" max="10">
+        </div>
+
+        <div class="input-group">
+          <label for="form-subject-target">Target Attendance Percentage (%)</label>
+          <input type="number" id="form-subject-target" class="form-input" placeholder="75" min="50" max="100" value="75">
+        </div>
+
+        <div class="input-group">
+          <label>Theme Color Palette</label>
+          <div class="color-picker-grid" id="subject-color-picker">
+            <!-- Programmatically rendered color nodes -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-cancel-subject">Cancel</button>
+        <button class="btn-primary" id="btn-save-subject">Save Course</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COPY TIMETABLE DIALOG -->
+  <div class="modal-overlay" id="modal-copy-timetable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Copy Timetable Day</h2>
+        <button class="btn-icon" id="btn-close-modal-copy"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="form-copy-source-day">
+        <p>Copy periods configuration from <strong id="copy-source-day-label">Monday</strong> to:</p>
+        
+        <div class="input-group" style="margin-top: 10px;">
+          <label for="form-copy-target-day">Select Target Day</label>
+          <select id="form-copy-target-day" class="form-select">
+            <option value="mon">Monday</option>
+            <option value="tue">Tuesday</option>
+            <option value="wed">Wednesday</option>
+            <option value="thu">Thursday</option>
+            <option value="fri">Friday</option>
+            <option value="sat">Saturday</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-cancel-copy">Cancel</button>
+        <button class="btn-primary" id="btn-submit-copy">Copy Schedule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic JS -->
+  <script src="app.js"></script>
+</body>
+</html>
