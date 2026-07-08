@@ -235,39 +235,29 @@ function setupEventListeners() {
 
   // Dashboard Undo trigger
   document.getElementById('btn-undo-last').addEventListener('click', undoLastAttendance);
-  const undoBtnMobile = document.getElementById('btn-undo-last-mobile');
-  if (undoBtnMobile) {
-    undoBtnMobile.addEventListener('click', undoLastAttendance);
-  }
 
-  // Mark Holiday button action trigger
-  const triggerHolidayAction = () => {
-    const todayStr = getLocalDateString();
-    const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
-    let activeDay = todayDay;
-    if (todayDay === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
-      activeDay = state.settings.saturdaySchedule;
-    }
-    const periods = state.timetable[activeDay] || [];
-    const markedToday = state.attendance[todayStr] || {};
-    const todayPeriodsCount = periods.filter(p => p.subjectId !== 'break').length;
-    const holidayCount = periods.filter(p => p.subjectId !== 'break' && markedToday[p.id] && markedToday[p.id].status === 'holiday').length;
-    const isTodayHoliday = todayPeriodsCount > 0 && holidayCount === todayPeriodsCount;
-
-    if (isTodayHoliday) {
-      clearTodayHoliday();
-    } else {
-      markTodayAsHoliday();
-    }
-  };
-
+  // Mark Holiday button
   const markHolidayBtn = document.getElementById('btn-mark-holiday');
   if (markHolidayBtn) {
-    markHolidayBtn.addEventListener('click', triggerHolidayAction);
-  }
-  const markHolidayBtnMobile = document.getElementById('btn-mark-holiday-mobile');
-  if (markHolidayBtnMobile) {
-    markHolidayBtnMobile.addEventListener('click', triggerHolidayAction);
+    markHolidayBtn.addEventListener('click', () => {
+      const todayStr = getLocalDateString();
+      const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
+      let activeDay = todayDay;
+      if (todayDay === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+        activeDay = state.settings.saturdaySchedule;
+      }
+      const periods = state.timetable[activeDay] || [];
+      const markedToday = state.attendance[todayStr] || {};
+      const todayPeriodsCount = periods.filter(p => p.subjectId !== 'break').length;
+      const holidayCount = periods.filter(p => p.subjectId !== 'break' && markedToday[p.id] && markedToday[p.id].status === 'holiday').length;
+      const isTodayHoliday = todayPeriodsCount > 0 && holidayCount === todayPeriodsCount;
+
+      if (isTodayHoliday) {
+        clearTodayHoliday();
+      } else {
+        markTodayAsHoliday();
+      }
+    });
   }
 
   // Subjects Page trigger
@@ -608,20 +598,13 @@ function renderDashboard() {
     dateText += ` (Running ${targetDayName}'s Timetable)`;
   }
   document.getElementById('dashboard-date').textContent = dateText;
-  const mobileDateEl = document.getElementById('mobile-dashboard-date-display');
-  if (mobileDateEl) {
-    mobileDateEl.textContent = dateText;
-  }
 
   // Toggle Undo Button
   const undoBtn = document.getElementById('btn-undo-last');
-  const undoBtnMobile = document.getElementById('btn-undo-last-mobile');
   if (state.lastAction) {
-    if (undoBtn) undoBtn.style.display = 'inline-flex';
-    if (undoBtnMobile) undoBtnMobile.style.display = 'inline-flex';
+    undoBtn.style.display = 'inline-flex';
   } else {
-    if (undoBtn) undoBtn.style.display = 'none';
-    if (undoBtnMobile) undoBtnMobile.style.display = 'none';
+    undoBtn.style.display = 'none';
   }
 
   // Load Today's Timetable
@@ -652,19 +635,6 @@ function renderDashboard() {
       holidayBtn.innerHTML = '<i data-lucide="umbrella"></i> Mark Today as Holiday';
       holidayBtn.style.color = '#a855f7';
       holidayBtn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
-    }
-  }
-
-  const holidayBtnMobile = document.getElementById('btn-mark-holiday-mobile');
-  if (holidayBtnMobile) {
-    if (isTodayHoliday) {
-      holidayBtnMobile.innerHTML = '<i data-lucide="party-popper" style="width:12px; height:12px;"></i> Resume';
-      holidayBtnMobile.style.color = 'var(--color-success)';
-      holidayBtnMobile.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-    } else {
-      holidayBtnMobile.innerHTML = '<i data-lucide="umbrella" style="width:12px; height:12px;"></i> Holiday';
-      holidayBtnMobile.style.color = '#a855f7';
-      holidayBtnMobile.style.borderColor = 'rgba(168, 85, 247, 0.4)';
     }
   }
 
