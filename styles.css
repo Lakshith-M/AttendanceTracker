@@ -1645,6 +1645,13 @@ body {
   color: #fff;
 }
 
+.btn-status-circle[data-status="holiday"].selected {
+  background-color: #a855f7;
+  border-color: #a855f7;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
+}
+
 .btn-status-circle:disabled:not(.selected) {
   opacity: 0.3;
   cursor: not-allowed;
@@ -1676,6 +1683,11 @@ body {
 .status-badge.cancelled {
   background: var(--bg-active);
   color: var(--text-secondary);
+}
+
+.status-badge.holiday {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
 }
 
 .btn-edit-status-icon {

@@ -236,6 +236,30 @@ function setupEventListeners() {
   // Dashboard Undo trigger
   document.getElementById('btn-undo-last').addEventListener('click', undoLastAttendance);
 
+  // Mark Holiday button
+  const markHolidayBtn = document.getElementById('btn-mark-holiday');
+  if (markHolidayBtn) {
+    markHolidayBtn.addEventListener('click', () => {
+      const todayStr = getLocalDateString();
+      const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
+      let activeDay = todayDay;
+      if (todayDay === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+        activeDay = state.settings.saturdaySchedule;
+      }
+      const periods = state.timetable[activeDay] || [];
+      const markedToday = state.attendance[todayStr] || {};
+      const todayPeriodsCount = periods.filter(p => p.subjectId !== 'break').length;
+      const holidayCount = periods.filter(p => p.subjectId !== 'break' && markedToday[p.id] && markedToday[p.id].status === 'holiday').length;
+      const isTodayHoliday = todayPeriodsCount > 0 && holidayCount === todayPeriodsCount;
+
+      if (isTodayHoliday) {
+        clearTodayHoliday();
+      } else {
+        markTodayAsHoliday();
+      }
+    });
+  }
+
   // Subjects Page trigger
   document.getElementById('btn-open-add-subject').addEventListener('click', () => openSubjectModal());
   document.getElementById('btn-close-modal-subject').addEventListener('click', closeSubjectModal);
@@ -492,14 +516,32 @@ function updateGeneralAlerts() {
     }
   });
 
-  if (totalToMark > 0 && markedCount < totalToMark) {
-    unmarkedToday = true;
-  }
+  // Generate class-specific warning banners for started & unmarked classes
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // Generate HTML Alert banners
-  if (unmarkedToday) {
-    alertContainer.appendChild(createAlertBanner('warning', 'clock', 'Action Required', 'You still have attendance left to mark for today\'s classes.'));
-  }
+  todayPeriods.forEach(p => {
+    if (p.subjectId !== 'break') {
+      const isMarked = markedRecords[p.id] && markedRecords[p.id].status !== '';
+      if (!isMarked) {
+        const [startH, startM] = p.startTime.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        
+        if (currentMinutes >= startMinutes) {
+          const subId = markedRecords[p.id] ? markedRecords[p.id].subjectId : p.subjectId;
+          const sub = state.subjects.find(s => s.id === subId);
+          if (sub) {
+            alertContainer.appendChild(createAlertBanner(
+              'warning',
+              'clock',
+              `Mark Attendance: ${sub.shortForm}`,
+              `Your class for <strong>${sub.title}</strong> started at ${p.startTime}. Please mark your attendance.`
+            ));
+          }
+        }
+      }
+    }
+  });
 
   if (subjectsBelow70.length > 0) {
     alertContainer.appendChild(createAlertBanner('danger', 'alert-triangle', 'Critical Attendance Alert', `Your attendance in <strong>${subjectsBelow70.join(', ')}</strong> is below <strong>70%</strong>! Attend classes to avoid debarment.`));
@@ -530,7 +572,17 @@ function createAlertBanner(type, icon, title, text) {
 
 // 1. DASHBOARD VIEW
 function renderDashboard() {
-  // Sync Saturday Day Order dropdown
+  // Sync Saturday Day Order dropdown and toggle its visibility only on Saturdays
+  const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
+  const satOrderBox = document.getElementById('dash-saturday-order-box');
+  if (satOrderBox) {
+    if (todayDay === 'sat') {
+      satOrderBox.style.display = 'flex';
+    } else {
+      satOrderBox.style.display = 'none';
+    }
+  }
+
   const satDropdown = document.getElementById('select-saturday-schedule');
   if (satDropdown) {
     satDropdown.value = state.settings.saturdaySchedule || 'off';
@@ -568,7 +620,35 @@ function renderDashboard() {
   const todayStr = getLocalDateString();
   const markedToday = state.attendance[todayStr] || {};
 
-  if (periods.length === 0) {
+  // Check if today is marked as holiday
+  const todayPeriodsCount = periods.filter(p => p.subjectId !== 'break').length;
+  const holidayCount = periods.filter(p => p.subjectId !== 'break' && markedToday[p.id] && markedToday[p.id].status === 'holiday').length;
+  const isTodayHoliday = todayPeriodsCount > 0 && holidayCount === todayPeriodsCount;
+
+  // Toggle Holiday button state or text
+  const holidayBtn = document.getElementById('btn-mark-holiday');
+  if (holidayBtn) {
+    if (isTodayHoliday) {
+      holidayBtn.innerHTML = '<i data-lucide="party-popper"></i> Resume Classes';
+      holidayBtn.style.color = 'var(--color-success)';
+      holidayBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+    } else {
+      holidayBtn.innerHTML = '<i data-lucide="umbrella"></i> Mark Today as Holiday';
+      holidayBtn.style.color = '#a855f7';
+      holidayBtn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+    }
+  }
+
+  if (isTodayHoliday) {
+    container.innerHTML = `
+      <div class="timetable-cell empty" style="padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #a855f7; border-radius: 12px; background: rgba(168, 85, 247, 0.05); width: 100%;">
+        <i data-lucide="umbrella" style="width: 36px; height: 36px; color: #a855f7; margin-bottom: 12px;"></i>
+        <h3 style="color: #a855f7; font-weight: 600; margin-bottom: 6px; font-size: 1.1rem;">Today is a Holiday!</h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; text-align: center;">All periods for today have been marked as holiday. Go relax!</p>
+        <button class="btn-primary" onclick="clearTodayHoliday()" style="background: #a855f7; border-color: #a855f7; display: inline-flex; align-items: center; gap: 6px;"><i data-lucide="rotate-ccw"></i> Resume Classes</button>
+      </div>`;
+    lucide.createIcons();
+  } else if (periods.length === 0) {
     container.innerHTML = `
       <div class="timetable-cell empty">
         <i data-lucide="calendar" style="margin-bottom: 6px;"></i>
@@ -593,12 +673,13 @@ function renderDashboard() {
         return;
       }
 
-      const subject = state.subjects.find(s => s.id === period.subjectId);
-      if (!subject) return;
-
       const marked = markedToday[period.id];
-      const isMarked = !!marked;
+      const isMarked = marked && marked.status !== '';
       const status = isMarked ? marked.status : '';
+
+      const subId = marked ? marked.subjectId : period.subjectId;
+      const subject = state.subjects.find(s => s.id === subId);
+      if (!subject) return;
 
       const card = document.createElement('div');
       card.className = 'period-card';
@@ -633,7 +714,12 @@ function renderDashboard() {
         <div class="period-info">
           <div class="period-badge" style="background: ${subject.color};">Period <span>${period.periodNumber}</span></div>
           <div class="period-meta">
-            <h3>${subject.title} (${subject.shortForm})</h3>
+            <h3 id="card-title-container-${period.id}" data-sub-id="${subject.id}" style="display:flex; align-items:center;">
+              <span>${subject.title} (${subject.shortForm})</span>
+              <button class="btn-swap-class" onclick="toggleSwapDropdown('${period.id}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px; margin-left:8px;" title="Swap subject for today's class">
+                <i data-lucide="refresh-cw" style="width:11px; height:11px;"></i> Swap
+              </button>
+            </h3>
             <p>
               <i data-lucide="clock" style="width:12px; height:12px;"></i> ${period.startTime} - ${period.endTime}
               ${period.room ? ` | <i data-lucide="map-pin" style="width:12px; height:12px;"></i> Room: ${period.room}` : ''}
@@ -692,27 +778,71 @@ function renderDashboard() {
 
   // Setup What-If Subject selector
   const calcSelect = document.getElementById('calc-subject');
-  const prevVal = calcSelect.value;
-  calcSelect.innerHTML = '';
-  
-  state.subjects.forEach(sub => {
-    const opt = document.createElement('option');
-    opt.value = sub.id;
-    opt.textContent = `${sub.title} (${sub.shortForm})`;
-    calcSelect.appendChild(opt);
-  });
+  if (calcSelect) {
+    const prevVal = calcSelect.value;
+    calcSelect.innerHTML = '';
+    
+    state.subjects.forEach(sub => {
+      const opt = document.createElement('option');
+      opt.value = sub.id;
+      opt.textContent = `${sub.title} (${sub.shortForm})`;
+      calcSelect.appendChild(opt);
+    });
 
-  if (state.subjects.length > 0) {
-    if (prevVal && state.subjects.find(s => s.id === prevVal)) {
-      calcSelect.value = prevVal;
+    if (state.subjects.length > 0) {
+      if (prevVal && state.subjects.find(s => s.id === prevVal)) {
+        calcSelect.value = prevVal;
+      } else {
+        calcSelect.value = state.subjects[0].id;
+      }
+      calculateWhatIf();
     } else {
-      calcSelect.value = state.subjects[0].id;
+      document.getElementById('calc-result-pct').textContent = '0.00%';
+      document.getElementById('calc-result-pct').className = 'calc-res-value';
     }
-    calculateWhatIf();
-  } else {
-    document.getElementById('calc-result-pct').textContent = '0.00%';
-    document.getElementById('calc-result-pct').className = 'calc-res-value';
   }
+}
+
+function toggleSwapDropdown(periodId) {
+  const titleContainer = document.getElementById(`card-title-container-${periodId}`);
+  if (!titleContainer) return;
+
+  const currentSubId = titleContainer.getAttribute('data-sub-id');
+
+  let selectHTML = `
+    <select class="form-select" onchange="overridePeriodSubject('${periodId}', this.value)" style="padding: 4px 8px; font-size: 0.8rem; border-radius: 6px; width: auto; max-width: 180px; margin-right: 8px; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); outline: none;">
+  `;
+  state.subjects.forEach(s => {
+    const selected = s.id === currentSubId ? 'selected' : '';
+    selectHTML += `<option value="${s.id}" ${selected}>${s.shortForm} - ${s.title}</option>`;
+  });
+  selectHTML += `</select>
+    <button class="btn-secondary" onclick="refreshActiveView()" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500;">Cancel</button>
+  `;
+
+  titleContainer.innerHTML = selectHTML;
+  lucide.createIcons();
+}
+
+function overridePeriodSubject(periodId, newSubjectId) {
+  const todayStr = getLocalDateString();
+  if (!state.attendance[todayStr]) {
+    state.attendance[todayStr] = {};
+  }
+
+  if (state.attendance[todayStr][periodId]) {
+    state.attendance[todayStr][periodId].subjectId = newSubjectId;
+  } else {
+    state.attendance[todayStr][periodId] = {
+      subjectId: newSubjectId,
+      status: '',
+      timestamp: Date.now()
+    };
+  }
+
+  saveToLocalStorage();
+  showToast('Class subject swapped for today!', 'success');
+  refreshActiveView();
 }
 
 // Mark attendance instantly from dashboard
@@ -740,9 +870,10 @@ function markDashboardAttendance(periodId, status) {
     previousStatus: prevMark ? prevMark.status : null
   };
 
-  // Set new status
+  // Set new status (keep the overridden subjectId if it exists)
+  const resolvedSubId = prevMark ? prevMark.subjectId : period.subjectId;
   state.attendance[todayStr][periodId] = {
-    subjectId: period.subjectId,
+    subjectId: resolvedSubId,
     status: status,
     timestamp: Date.now()
   };
@@ -1417,6 +1548,7 @@ function renderCalendar() {
       if (log.status === 'bunked') dotColor = 'var(--color-danger)';
       if (log.status === 'od') dotColor = 'var(--color-warning)';
       if (log.status === 'cancelled') dotColor = 'var(--text-muted)';
+      if (log.status === 'holiday') dotColor = '#a855f7'; // Purple for Holiday
       
       dotsHTML += `<span class="calendar-dot" style="background-color: ${dotColor};"></span>`;
     });
@@ -1513,6 +1645,7 @@ function updateSelectedDateUI() {
           <option value="bunked" ${currentStatus === 'bunked' ? 'selected' : ''}>❌ Bunked</option>
           <option value="od" ${currentStatus === 'od' ? 'selected' : ''}>🟠 OD</option>
           <option value="cancelled" ${currentStatus === 'cancelled' ? 'selected' : ''}>⚪ Cancelled</option>
+          <option value="holiday" ${currentStatus === 'holiday' ? 'selected' : ''}>🟣 Holiday</option>
         </select>
       </div>
     `;
@@ -2130,4 +2263,66 @@ function renderMobileTimetableList(day) {
   });
   
   lucide.createIcons();
+}
+
+function markTodayAsHoliday() {
+  const todayStr = getLocalDateString();
+  const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
+  let activeDay = todayDay;
+  if (todayDay === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+    activeDay = state.settings.saturdaySchedule;
+  }
+  const periods = state.timetable[activeDay] || [];
+  const nonBreakPeriods = periods.filter(p => p.subjectId !== 'break');
+
+  if (nonBreakPeriods.length === 0) {
+    showToast('No classes scheduled for today to mark as holiday.', 'error');
+    return;
+  }
+
+  if (!state.attendance[todayStr]) {
+    state.attendance[todayStr] = {};
+  }
+
+  // Backup for undo
+  state.lastAction = {
+    date: todayStr,
+    isHolidayAction: true,
+    previousMarks: JSON.parse(JSON.stringify(state.attendance[todayStr]))
+  };
+
+  nonBreakPeriods.forEach(period => {
+    state.attendance[todayStr][period.id] = {
+      subjectId: period.subjectId,
+      status: 'holiday',
+      timestamp: Date.now()
+    };
+  });
+
+  saveToLocalStorage();
+  showToast('Today marked as Holiday!', 'success');
+  refreshActiveView();
+}
+
+function clearTodayHoliday() {
+  const todayStr = getLocalDateString();
+  if (state.attendance[todayStr]) {
+    const todayDay = getLocalDayOfWeekString().toLowerCase().slice(0, 3);
+    let activeDay = todayDay;
+    if (todayDay === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+      activeDay = state.settings.saturdaySchedule;
+    }
+    const periods = state.timetable[activeDay] || [];
+    periods.forEach(p => {
+      if (p.subjectId !== 'break' && state.attendance[todayStr][p.id] && state.attendance[todayStr][p.id].status === 'holiday') {
+        delete state.attendance[todayStr][p.id];
+      }
+    });
+    if (Object.keys(state.attendance[todayStr]).length === 0) {
+      delete state.attendance[todayStr];
+    }
+  }
+  saveToLocalStorage();
+  showToast('Holiday status cleared!', 'success');
+  refreshActiveView();
 }
