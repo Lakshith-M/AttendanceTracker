@@ -369,6 +369,34 @@ function setupEventListeners() {
   document.getElementById('calendar-prev-month').addEventListener('click', () => shiftCalendarMonth(-1));
   document.getElementById('calendar-next-month').addEventListener('click', () => shiftCalendarMonth(1));
 
+  // Calendar Mark Holiday button
+  const calHolidayBtn = document.getElementById('btn-calendar-mark-holiday');
+  if (calHolidayBtn) {
+    calHolidayBtn.addEventListener('click', () => {
+      if (!state.selectedDate) return;
+      const dateStr = state.selectedDate;
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const parsedDate = new Date(y, m - 1, d);
+
+      const weekdayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      let weekday = weekdayNames[parsedDate.getDay()];
+      if (weekday === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+        weekday = state.settings.saturdaySchedule;
+      }
+      const periods = state.timetable[weekday] || [];
+      const dateLogs = state.attendance[dateStr] || {};
+      const totalNonBreak = periods.filter(p => p.subjectId !== 'break').length;
+      const markedHolidayCount = periods.filter(p => p.subjectId !== 'break' && dateLogs[p.id] && dateLogs[p.id].status === 'holiday').length;
+      const isSelectedDateHoliday = totalNonBreak > 0 && markedHolidayCount === totalNonBreak;
+
+      if (isSelectedDateHoliday) {
+        clearCalendarDateHoliday(dateStr);
+      } else {
+        markCalendarDateHoliday(dateStr);
+      }
+    });
+  }
+
   // "What-if" Sliders
   document.getElementById('calc-subject').addEventListener('change', calculateWhatIf);
   document.getElementById('slider-bunk').addEventListener('input', (e) => {
@@ -1596,6 +1624,24 @@ function updateSelectedDateUI() {
   const dayPeriods = state.timetable[weekday] || [];
   const dateLogs = state.attendance[state.selectedDate] || {};
 
+  // Check if selected date is marked as holiday
+  const totalNonBreak = dayPeriods.filter(p => p.subjectId !== 'break').length;
+  const markedHolidayCount = dayPeriods.filter(p => p.subjectId !== 'break' && dateLogs[p.id] && dateLogs[p.id].status === 'holiday').length;
+  const isSelectedDateHoliday = totalNonBreak > 0 && markedHolidayCount === totalNonBreak;
+
+  const calHolidayBtn = document.getElementById('btn-calendar-mark-holiday');
+  if (calHolidayBtn) {
+    if (isSelectedDateHoliday) {
+      calHolidayBtn.innerHTML = '<i data-lucide="rotate-ccw"></i> Resume Classes';
+      calHolidayBtn.style.color = 'var(--color-success)';
+      calHolidayBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+    } else {
+      calHolidayBtn.innerHTML = '<i data-lucide="umbrella"></i> Mark Day as Holiday';
+      calHolidayBtn.style.color = '#a855f7';
+      calHolidayBtn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+    }
+  }
+
   if (weekday === 'sun') {
     container.innerHTML = `<div class="timetable-cell empty"><i data-lucide="coffee"></i> <span>Sunday - College is closed.</span></div>`;
     lucide.createIcons();
@@ -1624,12 +1670,14 @@ function updateSelectedDateUI() {
       return;
     }
 
-    const subject = state.subjects.find(s => s.id === period.subjectId);
-    if (!subject) return;
-
     const log = dateLogs[period.id];
     const isMarked = !!log;
     const currentStatus = isMarked ? log.status : '';
+
+    // Check override subject ID
+    const resolvedSubId = log ? log.subjectId : period.subjectId;
+    const subject = state.subjects.find(s => s.id === resolvedSubId);
+    if (!subject) return;
 
     const row = document.createElement('div');
     row.className = 'period-card';
@@ -1653,7 +1701,10 @@ function updateSelectedDateUI() {
       <div class="period-info">
         <div class="period-badge" style="background: ${subject.color};">Period <span>${period.periodNumber}</span></div>
         <div class="period-meta">
-          <h3>${subject.title} (${subject.shortForm})</h3>
+          <h3 id="calendar-card-title-container-${state.selectedDate}-${period.id}" data-sub-id="${subject.id}" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span>${subject.title} (${subject.shortForm})</span>
+            <button class="btn-edit-status" onclick="toggleCalendarSwapDropdown('${state.selectedDate}', '${period.id}')" style="padding: 0; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-primary);"><i data-lucide="shuffle" style="width: 12px; height: 12px;"></i> Swap</button>
+          </h3>
           <p>
             <i data-lucide="clock" style="width:12px; height:12px;"></i> ${period.startTime} - ${period.endTime}
             ${period.room ? ` | Room: ${period.room}` : ''}
@@ -2324,4 +2375,113 @@ function clearTodayHoliday() {
   saveToLocalStorage();
   showToast('Holiday status cleared!', 'success');
   refreshActiveView();
+}
+
+function toggleCalendarSwapDropdown(dateStr, periodId) {
+  const titleContainer = document.getElementById(`calendar-card-title-container-${dateStr}-${periodId}`);
+  if (!titleContainer) return;
+
+  const currentSubId = titleContainer.getAttribute('data-sub-id');
+
+  let selectHTML = `
+    <select class="form-select" onchange="overrideCalendarPeriodSubject('${dateStr}', '${periodId}', this.value)" style="padding: 4px 8px; font-size: 0.8rem; border-radius: 6px; width: auto; max-width: 180px; margin-right: 8px; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); outline: none;">
+  `;
+  state.subjects.forEach(s => {
+    const selected = s.id === currentSubId ? 'selected' : '';
+    selectHTML += `<option value="${s.id}" ${selected}>${s.shortForm} - ${s.title}</option>`;
+  });
+  selectHTML += `</select>
+    <button class="btn-secondary" onclick="updateSelectedDateUI()" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500;">Cancel</button>
+  `;
+
+  titleContainer.innerHTML = selectHTML;
+  lucide.createIcons();
+}
+
+function overrideCalendarPeriodSubject(dateStr, periodId, newSubjectId) {
+  if (!state.attendance[dateStr]) {
+    state.attendance[dateStr] = {};
+  }
+
+  if (state.attendance[dateStr][periodId]) {
+    state.attendance[dateStr][periodId].subjectId = newSubjectId;
+  } else {
+    state.attendance[dateStr][periodId] = {
+      subjectId: newSubjectId,
+      status: '',
+      timestamp: Date.now()
+    };
+  }
+
+  saveToLocalStorage();
+  showToast('Class subject swapped for this date!', 'success');
+  updateSelectedDateUI();
+  renderCalendar();
+}
+
+function markCalendarDateHoliday(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const parsedDate = new Date(y, m - 1, d);
+  const weekdayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  let weekday = weekdayNames[parsedDate.getDay()];
+  if (weekday === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+    weekday = state.settings.saturdaySchedule;
+  }
+  const periods = state.timetable[weekday] || [];
+  const nonBreakPeriods = periods.filter(p => p.subjectId !== 'break');
+
+  if (nonBreakPeriods.length === 0) {
+    showToast('No classes scheduled to mark as holiday.', 'error');
+    return;
+  }
+
+  if (!state.attendance[dateStr]) {
+    state.attendance[dateStr] = {};
+  }
+
+  state.lastAction = {
+    date: dateStr,
+    isHolidayAction: true,
+    previousMarks: JSON.parse(JSON.stringify(state.attendance[dateStr]))
+  };
+
+  nonBreakPeriods.forEach(period => {
+    const currentMark = state.attendance[dateStr][period.id];
+    const resolvedSubId = currentMark ? currentMark.subjectId : period.subjectId;
+    state.attendance[dateStr][period.id] = {
+      subjectId: resolvedSubId,
+      status: 'holiday',
+      timestamp: Date.now()
+    };
+  });
+
+  saveToLocalStorage();
+  showToast('Date marked as Holiday!', 'success');
+  updateSelectedDateUI();
+  renderCalendar();
+}
+
+function clearCalendarDateHoliday(dateStr) {
+  if (state.attendance[dateStr]) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const parsedDate = new Date(y, m - 1, d);
+    const weekdayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    let weekday = weekdayNames[parsedDate.getDay()];
+    if (weekday === 'sat' && state.settings.saturdaySchedule && state.settings.saturdaySchedule !== 'off') {
+      weekday = state.settings.saturdaySchedule;
+    }
+    const periods = state.timetable[weekday] || [];
+    periods.forEach(p => {
+      if (p.subjectId !== 'break' && state.attendance[dateStr][p.id] && state.attendance[dateStr][p.id].status === 'holiday') {
+        delete state.attendance[dateStr][p.id];
+      }
+    });
+    if (Object.keys(state.attendance[dateStr]).length === 0) {
+      delete state.attendance[dateStr];
+    }
+  }
+  saveToLocalStorage();
+  showToast('Holiday status cleared!', 'success');
+  updateSelectedDateUI();
+  renderCalendar();
 }
