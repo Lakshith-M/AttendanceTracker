@@ -290,11 +290,25 @@ function setupEventListeners() {
 
   // Settings Reset Button
   document.getElementById('btn-factory-reset').addEventListener('click', () => {
-    if (confirm('CRITICAL WARNING: Are you absolutely sure you want to delete all subjects, timetable data, and history records? This cannot be undone.')) {
-      localStorage.clear();
-      showToast('All app data successfully erased!', 'success');
-      setTimeout(() => window.location.reload(), 1000);
+    showCustomConfirm(
+      'Reset All Data?',
+      'Erase all subjects, schedules, and attendance logs. This action is irreversible.',
+      'Delete Everything',
+      () => {
+        localStorage.clear();
+        showToast('All app data successfully erased!', 'success');
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    );
+  });
+
+  // Confirm modal events
+  document.getElementById('btn-confirm-cancel').addEventListener('click', closeCustomConfirm);
+  document.getElementById('btn-confirm-action').addEventListener('click', () => {
+    if (confirmCallback) {
+      confirmCallback();
     }
+    closeCustomConfirm();
   });
 
   // Timetable Tabs trigger
@@ -1481,38 +1495,42 @@ function deleteSubject(subjectId) {
   const sub = state.subjects.find(s => s.id === subjectId);
   if (!sub) return;
 
-  if (confirm(`Are you sure you want to delete ${sub.title}? All attendance logs linked to this subject will be removed.`)) {
-    
-    // Remove subject
-    state.subjects = state.subjects.filter(s => s.id !== subjectId);
+  showCustomConfirm(
+    'Delete Course?',
+    `Are you sure you want to delete ${sub.title}? All attendance logs linked to this subject will be removed.`,
+    'Delete Course',
+    () => {
+      // Remove subject
+      state.subjects = state.subjects.filter(s => s.id !== subjectId);
 
-    // Delete matching records in attendance
-    Object.keys(state.attendance).forEach(date => {
-      const dayLogs = state.attendance[date];
-      Object.keys(dayLogs).forEach(pId => {
-        if (dayLogs[pId].subjectId === subjectId) {
-          delete dayLogs[pId];
+      // Delete matching records in attendance
+      Object.keys(state.attendance).forEach(date => {
+        const dayLogs = state.attendance[date];
+        Object.keys(dayLogs).forEach(pId => {
+          if (dayLogs[pId].subjectId === subjectId) {
+            delete dayLogs[pId];
+          }
+        });
+        if (Object.keys(dayLogs).length === 0) {
+          delete state.attendance[date];
         }
       });
-      if (Object.keys(dayLogs).length === 0) {
-        delete state.attendance[date];
-      }
-    });
 
-    // Remove from timetable configuration
-    Object.keys(state.timetable).forEach(day => {
-      state.timetable[day] = state.timetable[day].map(p => {
-        if (p.subjectId === subjectId) {
-          p.subjectId = 'break'; // reset to break/free period
-        }
-        return p;
+      // Remove from timetable configuration
+      Object.keys(state.timetable).forEach(day => {
+        state.timetable[day] = state.timetable[day].map(p => {
+          if (p.subjectId === subjectId) {
+            p.subjectId = 'break'; // reset to break/free period
+          }
+          return p;
+        });
       });
-    });
 
-    saveToLocalStorage();
-    showToast('Course and its records deleted.', 'success');
-    refreshActiveView();
-  }
+      saveToLocalStorage();
+      showToast('Course and its records deleted.', 'success');
+      refreshActiveView();
+    }
+  );
 }
 
 
@@ -2484,4 +2502,30 @@ function clearCalendarDateHoliday(dateStr) {
   showToast('Holiday status cleared!', 'success');
   updateSelectedDateUI();
   renderCalendar();
+}
+
+let confirmCallback = null;
+
+function showCustomConfirm(title, message, btnText, callback) {
+  const modal = document.getElementById('modal-confirm');
+  if (!modal) return;
+
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  
+  const actionBtn = document.getElementById('btn-confirm-action');
+  actionBtn.textContent = btnText;
+  
+  confirmCallback = callback;
+  
+  modal.classList.add('active');
+  lucide.createIcons();
+}
+
+function closeCustomConfirm() {
+  const modal = document.getElementById('modal-confirm');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+  confirmCallback = null;
 }
