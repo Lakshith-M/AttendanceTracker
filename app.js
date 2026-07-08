@@ -530,6 +530,12 @@ function createAlertBanner(type, icon, title, text) {
 
 // 1. DASHBOARD VIEW
 function renderDashboard() {
+  // Sync Saturday Day Order dropdown
+  const satDropdown = document.getElementById('select-saturday-schedule');
+  if (satDropdown) {
+    satDropdown.value = state.settings.saturdaySchedule || 'off';
+  }
+
   // Show Date
   const d = new Date();
   const options = { weekday: 'long', day: 'numeric', month: 'long' };

@@ -94,9 +94,22 @@
         <div class="dashboard-grid" data-active-dash-tab="today">
           <!-- Main Area: Timetable Classes & Quick Stats -->
           <div class="dashboard-main">
-            <!-- Today's Timetable Classes -->
             <div class="card dash-sec-today">
-              <h2 style="margin-bottom: 16px;">Today's Classes</h2>
+              <div class="header-row" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <h2>Today's Classes</h2>
+                <div id="dash-saturday-order-box" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
+                  <span style="font-weight: 500; color: var(--text-secondary);"><i data-lucide="calendar" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 2px;"></i> Saturday Day Order:</span>
+                  <select id="select-saturday-schedule" class="form-select" style="width: auto; padding: 4px 8px; font-size: 0.8rem; border-radius: 8px; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); outline: none;">
+                    <option value="off">Off (No Classes)</option>
+                    <option value="mon">Monday Timetable</option>
+                    <option value="tue">Tuesday Timetable</option>
+                    <option value="wed">Wednesday Timetable</option>
+                    <option value="thu">Thursday Timetable</option>
+                    <option value="fri">Friday Timetable</option>
+                    <option value="sat">Saturday Timetable</option>
+                  </select>
+                </div>
+              </div>
               <div id="today-classes-container" class="period-list">
                 <!-- Classes will be loaded here dynamically -->
               </div>
@@ -396,24 +409,6 @@
             </div>
           </div>
 
-          <!-- Setting: Saturday Day Order -->
-          <div class="settings-item">
-            <div class="settings-info">
-              <h3>Saturday Day Order</h3>
-              <p>Assign another weekday's timetable to Saturday (e.g. running Monday classes on Saturday).</p>
-            </div>
-            <div class="settings-control">
-              <select id="select-saturday-schedule" class="form-select" style="width: 200px;">
-                <option value="off">Off (No Classes)</option>
-                <option value="mon">Monday Timetable</option>
-                <option value="tue">Tuesday Timetable</option>
-                <option value="wed">Wednesday Timetable</option>
-                <option value="thu">Thursday Timetable</option>
-                <option value="fri">Friday Timetable</option>
-                <option value="sat">Saturday Timetable</option>
-              </select>
-            </div>
-          </div>
 
           <!-- Setting: Data Backup JSON -->
           <div class="settings-item">
